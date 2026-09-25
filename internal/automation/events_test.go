@@ -259,6 +259,59 @@ func TestExtractTaskFromWS_SimplifiedPaidMessage(t *testing.T) {
 	}
 }
 
+// TestExtractTaskFromWS_PureStatusReminderIgnored 验证两种无交易依据的会话状态提醒均不创建任务。
+func TestExtractTaskFromWS_PureStatusReminderIgnored(t *testing.T) {
+	// testCase 是当前纯状态文案及可选展示样式的合成报文。
+	for _, testCase := range []struct {
+		// name 区分拍下、付款及样式字段的存在情况。
+		name string
+		// raw 只含生产样本已确认的四个顶层字段，不携带真实平台载荷。
+		raw string
+	}{
+		{name: "拍下带样式", raw: `{"1":"12345678901@goofish","2":"status","3":{"redReminder":"等待买家付款","redReminderStyle":1},"4":1}`},
+		{name: "付款带样式", raw: `{"1":"12345678901@goofish","2":"status","3":{"redReminder":"等待卖家发货","redReminderStyle":1},"4":1}`},
+		{name: "付款省略样式", raw: `{"1":"12345678901@goofish","2":"status","3":{"redReminder":"等待卖家发货"},"4":1}`},
+	} {
+		// t 将每种展示报文独立断言，避免一个样本掩盖另一状态。
+		t.Run(testCase.name, func(t *testing.T) {
+			// task 是纯状态提醒经统一入口的解析结果，必须为空。
+			if task := ExtractTaskFromWS("acc1", "", mustMap(t, testCase.raw)); task != nil {
+				t.Fatalf("纯状态提醒不能创建自动化任务: %+v", task)
+			}
+		})
+	}
+}
+
+// TestExtractTaskFromWS_StatusWithTransactionEvidenceRetained 验证同文案只要结构不同或存在交易依据就沿用原解析。
+func TestExtractTaskFromWS_StatusWithTransactionEvidenceRetained(t *testing.T) {
+	// testCase 覆盖商品、买家、订单、业务键、角色及卡片更新的兼容入口。
+	for _, testCase := range []struct {
+		// name 指出使简化报文仍具交易意义的字段。
+		name string
+		// raw 是不含真实账号信息的合成平台报文。
+		raw string
+		// trigger 是应保留的原自动化任务类型。
+		trigger string
+	}{
+		{name: "商品", raw: `{"1":"12345678901@goofish","2":"status","3":{"redReminder":"等待卖家发货","itemId":"item-1"},"4":1}`, trigger: TriggerOrderPaid},
+		{name: "买家", raw: `{"1":"12345678901@goofish","2":"status","3":{"redReminder":"等待买家付款","senderUserId":"buyer-1"},"4":1}`, trigger: TriggerOrderCreated},
+		{name: "订单链接", raw: `{"1":"12345678901@goofish","2":"fleamarket://order_detail?id=1234567890123456789&role=seller","3":{"redReminder":"等待卖家发货"},"4":1}`, trigger: TriggerOrderPaid},
+		{name: "业务键", raw: `{"1":"12345678901@goofish","2":"status","3":{"redReminder":"等待卖家发货","updateKey":"12345678901:1234567890123456789:10:TRADE_PAID:26"},"4":1}`, trigger: TriggerOrderPaid},
+		{name: "卖家角色", raw: `{"1":"12345678901@goofish","2":"status","3":{"redReminder":"等待卖家发货","orderRole":"seller"},"4":1}`, trigger: TriggerOrderPaid},
+		{name: "卡片更新对象", raw: `{"1":"12345678901@goofish","2":"status","3":{"redReminder":"等待卖家发货"},"4":{"senderUserId":"buyer-1","reminderUrl":"fleamarket://message_chat?itemId=item-1&peerUserId=buyer-1&sid=12345678901"}}`, trigger: TriggerOrderPaid},
+		{name: "额外未知字段", raw: `{"1":"12345678901@goofish","2":"status","3":{"redReminder":"等待卖家发货","futureFact":"value"},"4":1}`, trigger: TriggerOrderPaid},
+	} {
+		// t 把不同交易依据分开校验，防止放宽纯提醒判定范围。
+		t.Run(testCase.name, func(t *testing.T) {
+			// task 是旧兼容路径保留的交易任务；未知角色仍由中心后续核验。
+			task := ExtractTaskFromWS("acc1", "", mustMap(t, testCase.raw))
+			if task == nil || task.TriggerType != testCase.trigger {
+				t.Fatalf("含交易依据的提醒应保留原任务，got %+v", task)
+			}
+		})
+	}
+}
+
 // TestExtractTaskFromWS_UserPaidTextIgnored 验证明确的普通用户消息不会伪造系统付款触发。
 func TestExtractTaskFromWS_UserPaidTextIgnored(t *testing.T) {
 	// raw 明确标记为普通接收消息，正文却包含系统付款文案。

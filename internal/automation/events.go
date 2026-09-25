@@ -92,14 +92,22 @@ type OrderDetail struct {
 }
 
 // ExtractTaskFromWS 从 raw 单条解密 WS 消息提取卖家交易事件；accountID 是接收账号的本地标识。
-// cookieStr 是仅供任务执行使用的明文凭证，不得输出到日志；返回任务沿用该凭证，无法识别或明确为买家副本时返回 nil。
-// 本入口不持久化事实或执行动作；无角色的旧版合法卖家事件继续保留，规则和防重由 Center 决定。
+// cookieStr 是仅供任务执行的明文凭证，不得记录日志且返回任务沿用；纯状态提醒、无法识别或明确为买家副本时返回 nil；本入口不执行动作，合法无角色事件仍由 Center 核验。
 func ExtractTaskFromWS(accountID, cookieStr string, raw map[string]any) *Task {
 	if raw == nil {
 		return nil
 	}
-	// f 汇总已有协议路径解析出的交易事实和接收方角色，供所有 WS 交易种类共用入口防御。
-	f := fieldsFromRaw(raw)
+	// f 汇总交易事实和角色；m3 只用于四字段纯状态提醒判定，有交易依据时保留原卡片路径。
+	f, m3 := fieldsFromRaw(raw), mapAt(raw, "3")
+	if f.simplified && len(raw) == 4 && raw["2"] != nil && m3 != nil &&
+		(len(m3) == 1 || len(m3) == 2 && m3["redReminderStyle"] != nil) && (f.redReminder == "等待买家付款" || f.redReminder == "等待卖家发货") &&
+		f.orderID == "" && f.itemID == "" && f.buyerID == "" && f.updateKey == "" && f.orderRole == "" && !f.orderRoleConflict && !f.systemBiz &&
+		f.reminderURL == "" && f.text == "" && f.reminderNotice == "" && f.taskName == "" && f.cardTitle == "" && f.buttonText == "" && f.title == "" && f.detail == "" {
+		switch raw["4"].(type) {
+		case float64, int, int64, json.Number:
+			return nil
+		}
+	}
 	if f.orderRoleConflict {
 		// 角色字段互相矛盾时无法证明当前账号方向，拒绝进入任何自动化分支。
 		return nil

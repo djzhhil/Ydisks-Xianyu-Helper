@@ -71,6 +71,29 @@ func TestHandleMessage_SystemEventDispatchedToHandler(t *testing.T) {
 	}
 }
 
+// TestHandleMessage_PureStatusReminderHasNoBusinessRoute 验证被过滤的状态提醒既不投递自动化，也不进入聊天回复或出站观察。
+func TestHandleMessage_PureStatusReminderHasNoBusinessRoute(t *testing.T) {
+	// handler 同时记录系统任务、聊天回复和出站回显，避免只检查自动化入口遗漏其他业务路径。
+	handler := &systemCapturingHandler{}
+	// dispatcher 使用合成账号及同步分发，不连接平台或运行发货动作。
+	dispatcher := newMessageDispatcher(messageDispatcherConfig{
+		CookieID:       "test-account",
+		CurrentHandler: func() Handler { return handler },
+	})
+	defer dispatcher.stop()
+	// raw 是字段 1 为会话字符串、字段 4 为数字的纯付款状态提示。
+	raw := map[string]any{
+		"1": "12345678901@goofish",
+		"2": "status",
+		"3": map[string]any{"redReminder": "等待卖家发货", "redReminderStyle": float64(1)},
+		"4": float64(1),
+	}
+	dispatcher.handleMessage(raw)
+	if len(handler.tasks) != 0 || len(handler.chats) != 0 || len(handler.outgoing) != 0 || len(dispatcher.debounceTimers) != 0 {
+		t.Fatal("纯状态提示不能创建任务、安排自动回复或写入出站回显")
+	}
+}
+
 // TestHandleMessage_PlainChatRoutesToDebounce 普通聊天消息进入防抖回复链。
 func TestHandleMessage_PlainChatRoutesToDebounce(t *testing.T) {
 	// acc、h、cleanup 用于本次流程后续判断的acc、h、cleanup
