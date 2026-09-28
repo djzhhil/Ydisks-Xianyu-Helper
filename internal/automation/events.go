@@ -604,12 +604,16 @@ func extFields(ext string) (updateKey, contentType string) {
 	return strAny(m["updateKey"]), strAny(m["contentType"])
 }
 
-// parseUpdateKey 仅在业务键第二段是完整数字订单号时返回订单号；平台的两位事件码不能充当订单事实。
+// parseUpdateKey 保留历史非数字订单标识，但不把业务键第二段的短数字事件码当作订单号。
 func parseUpdateKey(updateKey string) (chatID, orderID string) {
 	// parts 保存平台业务键的各段；首段是会话号，第二段可能是订单号，也可能只是事件码。
 	parts := strings.Split(updateKey, ":")
 	if len(parts) >= 2 {
-		return parts[0], directOrderID(parts[1])
+		// 短数字段是平台事件码；非数字旧标识仍交给原有订单和规则流程处理。
+		if len(parts[1]) < 10 && strings.Trim(parts[1], "0123456789") == "" {
+			return parts[0], ""
+		}
+		return parts[0], parts[1]
 	}
 	return "", ""
 }
