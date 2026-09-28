@@ -604,12 +604,12 @@ func extFields(ext string) (updateKey, contentType string) {
 	return strAny(m["updateKey"]), strAny(m["contentType"])
 }
 
-// parseUpdateKey 封装parseUpdateKey业务协调。
+// parseUpdateKey 仅在业务键第二段是完整数字订单号时返回订单号；平台的两位事件码不能充当订单事实。
 func parseUpdateKey(updateKey string) (chatID, orderID string) {
-	// parts 用于本次流程后续判断的parts
+	// parts 保存平台业务键的各段；首段是会话号，第二段可能是订单号，也可能只是事件码。
 	parts := strings.Split(updateKey, ":")
 	if len(parts) >= 2 {
-		return parts[0], parts[1]
+		return parts[0], directOrderID(parts[1])
 	}
 	return "", ""
 }
@@ -777,16 +777,17 @@ func matchOrderID(s string) string {
 	return ""
 }
 
-// extractOrderIDFromContent 封装extract订单IDFrom内容业务协调。
+// extractOrderIDFromContent 从交易卡片的订单跳转链接提取真实订单号，兼容确认收货提醒的 intent.page.jumpUrl。
 func extractOrderIDFromContent(contentJSON string) string {
-	// c 用于本次流程后续判断的c
+	// c 保存平台卡片结构；无法解码时不能从普通文案猜测订单号。
 	var c map[string]any
 	if json.Unmarshal([]byte(contentJSON), &c) != nil {
 		return ""
 	}
-	// path 表示当前遍历过程中的路径
+	// path 仅覆盖承载订单详情链接的卡片字段，避免把业务键事件码误作订单号。
 	for _, path := range [][]string{
 		{"dxCard", "item", "main", "exContent", "button", "targetUrl"},
+		{"dxCard", "item", "main", "exContent", "button", "intent", "page", "jumpUrl"},
 		{"dxCard", "item", "main", "targetUrl"},
 		{"dynamicOperation", "changeContent", "dxCard", "item", "main", "exContent", "button", "targetUrl"},
 	} {
