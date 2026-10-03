@@ -367,7 +367,7 @@ func testServerDependencies(authentication *auth.Service, databaseHealth Databas
 		SessionRecovery: testSessionRecoveryAdapter{handler: sessionRecovery}, PlatformCredentials: ports.PlatformCredentials,
 		Authentication: ports.Authentication, LoginAudit: ports.LoginAudit, PasswordLogin: ports.PasswordLogin, AccountDelete: ports.AccountDelete,
 		AccountProfile: ports.AccountProfile, AccountLongLogin: ports.AccountLongLogin, AccountSettings: ports.AccountSettings,
-		AccountRuntime: ports.AccountRuntime, AccountSummaries: ports.AccountSummaries, AccountTasks: ports.AccountTasks, Chat: ports.Chat,
+		AccountRuntime: ports.AccountRuntime, CookieExchange: ports.CookieExchange, AccountSummaries: ports.AccountSummaries, AccountTasks: ports.AccountTasks, Chat: ports.Chat,
 		UncertainNotifications: ports.UncertainNotifications, NotificationChannels: ports.NotificationChannels, Analytics: ports.Analytics,
 		AutomationIssues: ports.AutomationIssues, AutomationRules: ports.AutomationRules, Cards: ports.Cards,
 		DeliveryTemplates:      ports.DeliveryTemplates,

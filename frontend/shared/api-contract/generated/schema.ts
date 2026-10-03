@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/v1/integrations/accounts/{account_id}/cookie-snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 专用授权 Cookie 交换边界 */
+        get: operations["getIntegrationCookieSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/accounts/{account_id}/cookie-updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 专用授权 Cookie 交换边界 */
+        post: operations["postIntegrationCookieUpdates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/account-tasks/{cid}": {
         parameters: {
             query?: never;
@@ -3220,6 +3254,49 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** @description 仅授权交换响应使用的明文快照；无正有效期为会话 Cookie，布尔缺省 false，空分区键表示不分区。 */
+        CookieExchangeCookie: {
+            name: string;
+            value: string;
+            domain: string;
+            path: string;
+            expires?: number;
+            /** @default false */
+            httpOnly: boolean;
+            /** @default false */
+            secure: boolean;
+            sameSite?: string;
+            /** @default  */
+            partitionKey: string;
+        };
+        CookieExchangeSnapshot: {
+            account_id: string;
+            credential_version: string;
+            /** @constant */
+            snapshot_complete: true;
+            cookies: components["schemas"]["CookieExchangeCookie"][];
+        };
+        CookieExchangeUpdates: {
+            credential_version: string;
+            responses: components["schemas"]["CookieExchangeBatch"][];
+        };
+        CookieExchangeBatch: {
+            /** @description 仅 HTTPS 默认 443；无用户信息、query、fragment；主机只允许 h5api.m.goofish.com、www.goofish.com、passport.goofish.com、seller.goofish.com。仅用于作用域解析，不执行请求。 */
+            response_url: string;
+            /**
+             * Format: date-time
+             * @description UTC RFC3339 毫秒；不早于 Helper 当前时间十分钟，不晚于三十秒；数组按接收时间排序。
+             */
+            received_at: string;
+            set_cookies: string[];
+        };
+        CookieExchangeResult: {
+            account_id: string;
+            changed: boolean;
+            credential_version: string;
+            /** @enum {string} */
+            runtime_sync_status: "synced" | "not_running" | "not_needed" | "failed";
+        };
     };
     responses: never;
     parameters: never;
@@ -3229,6 +3306,182 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getIntegrationCookieSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 提交或读取成功 */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookieExchangeSnapshot"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    postIntegrationCookieUpdates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CookieExchangeUpdates"];
+            };
+        };
+        responses: {
+            /** @description 提交或读取成功 */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookieExchangeResult"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 统一错误响应；不包含凭证 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     getApiV1AccountTasksBycid: {
         parameters: {
             query?: never;

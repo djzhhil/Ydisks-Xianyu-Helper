@@ -27,6 +27,7 @@ func TestOpenAPISuccessContractCoverage(t *testing.T) {
 		// run 会执行该领域完整的真实 HTTP 成功场景。
 		run func(*testing.T)
 	}{
+		{name: "cookie-exchange", run: TestCookieExchangeContracts},
 		{name: "session-and-qr", run: TestOpenAPISessionAndQRResponses},
 		{name: "accounts-and-system", run: TestOpenAPIAccountAndSystemResponses},
 		{name: "query-chat-orders", run: TestOpenAPIQueryChatAndOrderResponses},

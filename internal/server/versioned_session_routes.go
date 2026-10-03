@@ -10,6 +10,7 @@ import (
 func (s *Server) mountHealthAndVersionedRoutes(r chi.Router) {
 	r.Get("/health", s.health)
 	s.mountVersionedSession(r)
+	s.mountCookieExchangeRoutes(r)
 	s.mountVersionedAccounts(r)
 	s.mountVersionedOrders(r)
 	s.mountVersionedItems(r)
