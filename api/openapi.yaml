@@ -6,6 +6,136 @@ info:
 servers:
   - url: /
 paths:
+  "/api/v1/integrations/accounts/{account_id}/cookie-snapshot":
+    get:
+      operationId: getIntegrationCookieSnapshot
+      summary: 专用授权 Cookie 交换边界
+      security: [{cookieAuth: []}]
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema: {type: string, minLength: 1}
+      responses:
+        '200':
+          description: 提交或读取成功
+          headers:
+            Cache-Control:
+              schema: {type: string, const: no-store}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieExchangeSnapshot'
+        '400':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  "/api/v1/integrations/accounts/{account_id}/cookie-updates":
+    post:
+      operationId: postIntegrationCookieUpdates
+      summary: 专用授权 Cookie 交换边界
+      security: [{cookieAuth: []}]
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema: {type: string, minLength: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CookieExchangeUpdates'
+      responses:
+        '200':
+          description: 提交或读取成功
+          headers:
+            Cache-Control:
+              schema: {type: string, const: no-store}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieExchangeResult'
+        '400':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 统一错误响应；不包含凭证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   "/api/v1/account-tasks/{cid}":
     get:
       operationId: getApiV1AccountTasksBycid
@@ -8913,3 +9043,65 @@ components:
         details:
           type: object
       additionalProperties: true
+
+    CookieExchangeCookie:
+      type: object
+      description: 仅授权交换响应使用的明文快照；无正有效期为会话 Cookie，布尔缺省 false，空分区键表示不分区。
+      required: [name, value, domain, path]
+      properties:
+        name: {type: string}
+        value: {type: string}
+        domain: {type: string}
+        path: {type: string}
+        expires: {type: number}
+        httpOnly: {type: boolean, default: false}
+        secure: {type: boolean, default: false}
+        sameSite: {type: string}
+        partitionKey: {type: string, default: ''}
+    CookieExchangeSnapshot:
+      type: object
+      required: [account_id, credential_version, snapshot_complete, cookies]
+      properties:
+        account_id: {type: string}
+        credential_version: {type: string, pattern: '^v1:[a-f0-9]{64}$'}
+        snapshot_complete: {type: boolean, const: true}
+        cookies:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/CookieExchangeCookie'}
+    CookieExchangeUpdates:
+      type: object
+      additionalProperties: false
+      required: [credential_version, responses]
+      properties:
+        credential_version: {type: string, pattern: '^v1:[a-f0-9]{64}$'}
+        responses:
+          type: array
+          minItems: 1
+          maxItems: 32
+          items: {$ref: '#/components/schemas/CookieExchangeBatch'}
+    CookieExchangeBatch:
+      type: object
+      additionalProperties: false
+      required: [response_url, received_at, set_cookies]
+      properties:
+        response_url:
+          type: string
+          description: 仅 HTTPS 默认 443；无用户信息、query、fragment；主机只允许 h5api.m.goofish.com、www.goofish.com、passport.goofish.com、seller.goofish.com。仅用于作用域解析，不执行请求。
+        received_at:
+          type: string
+          format: date-time
+          description: UTC RFC3339 毫秒；不早于 Helper 当前时间十分钟，不晚于三十秒；数组按接收时间排序。
+        set_cookies:
+          type: array
+          minItems: 1
+          maxItems: 128
+          items: {type: string, minLength: 1, maxLength: 8192}
+    CookieExchangeResult:
+      type: object
+      required: [account_id, changed, credential_version, runtime_sync_status]
+      properties:
+        account_id: {type: string}
+        changed: {type: boolean}
+        credential_version: {type: string, pattern: '^v1:[a-f0-9]{64}$'}
+        runtime_sync_status: {type: string, enum: [synced, not_running, not_needed, failed]}

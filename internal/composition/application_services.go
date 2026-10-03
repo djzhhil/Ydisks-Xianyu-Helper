@@ -95,6 +95,8 @@ type Services struct {
 	accountSettings *accountapp.SettingsService
 	// accountRuntime 是账号凭证写回后的运行时同步与状态快照应用服务。
 	accountRuntime *accountapp.RuntimeService
+	// cookieExchange 是专用授权导出与增量提交服务。
+	cookieExchange *accountapp.CookieExchangeService
 	// accountSummaries 是账号摘要、所有权和管理员账号列表应用服务。
 	accountSummaries *accountapp.SummaryService
 	// accountTasks 是账号任务设置、历史和手动执行应用服务。
@@ -339,6 +341,8 @@ type TransportPorts struct {
 	Keywords               *keywordsapp.Service
 	Settings               *settingsapp.Service
 	Admin                  *adminapp.Service
+	// CookieExchange 是专用交换用例投影。
+	CookieExchange *accountapp.CookieExchangeService
 }
 
 // TransportPorts 返回已完成构造的只读服务引用；调用方不得在运行期替换任何字段。
@@ -354,7 +358,7 @@ func (services *Services) TransportPorts() TransportPorts {
 		ItemCatalogMutation: services.itemCatalogMutation, AccountLogin: services.accountLogin, QRLogin: services.qrLogin,
 		PlatformCredentials: services.platformCredentials, Authentication: services.authentication, LoginAudit: services.loginAudit,
 		PasswordLogin: services.passwordLogin, AccountDelete: services.accountDelete, AccountProfile: services.accountProfile,
-		AccountLongLogin: services.accountLongLogin, AccountSettings: services.accountSettings, AccountRuntime: services.accountRuntime,
+		AccountLongLogin: services.accountLongLogin, AccountSettings: services.accountSettings, AccountRuntime: services.accountRuntime, CookieExchange: services.cookieExchange,
 		AccountSummaries: services.accountSummaries, AccountTasks: services.accountTasks, Chat: services.chat,
 		UncertainNotifications: services.uncertainNotifications, NotificationChannels: services.notificationChannels,
 		Analytics: services.analytics, AutomationIssues: services.automationIssues, AutomationRules: services.automationRules, DeliveryTemplates: services.deliveryTemplates,
@@ -513,6 +517,7 @@ func New(dependencies Dependencies) (*Services, error) {
 		accountLongLogin:       accountLongLogin,
 		accountSettings:        accountSettings,
 		accountRuntime:         accountRuntime,
+		cookieExchange:         newCookieExchangeService(dependencies, accountRuntime),
 		accountSummaries:       accountSummaries,
 		accountTasks:           dependencies.TransportApplications.AccountTasks,
 		credentialWake:         credentialWake,

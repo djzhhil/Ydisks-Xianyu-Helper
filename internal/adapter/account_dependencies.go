@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"errors"
+	"log/slog"
 
 	accountapp "xianyu-go/internal/application/account"
 	"xianyu-go/internal/db"
@@ -68,4 +69,9 @@ func (d *AccountDependencies) NewAccountLoginAuditRepository() *AccountLoginAudi
 		return nil
 	}
 	return NewAccountLoginAuditRepository(d.store)
+}
+
+// NewCookieExchangeRepository 创建专用 Cookie 交换适配器；logger 只记录非敏感阶段。
+func (d *AccountDependencies) NewCookieExchangeRepository(logger *slog.Logger) accountapp.CookieExchangeRepository {
+	return NewCookieExchangeRepository(d.store, logger)
 }

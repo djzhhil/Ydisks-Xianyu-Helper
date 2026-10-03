@@ -371,6 +371,14 @@ type AdminPort interface {
 	Stats(context.Context) (adminapp.Stats, error)
 }
 
+// CookieExchangePort 只提供授权快照与增量提交，禁止扩大通用账号 DTO。
+type CookieExchangePort interface {
+	// Snapshot 按上下文、用户与账号返回专用授权快照。
+	Snapshot(context.Context, int64, string) (accountapp.ExchangeSnapshot, error)
+	// Commit 按上下文、用户、账号、旧版本和有序响应返回非敏感结果。
+	Commit(context.Context, int64, string, string, []accountapp.ExchangeBatch) (accountapp.ExchangeCommit, error)
+}
+
 // ApplicationPorts 是构造期注入 HTTP transport 的不可变应用 Port 集合。
 // 它不包含 adapter、数据库、平台 client、账号 Manager 或 worker 生命周期拥有权。
 type ApplicationPorts struct {
@@ -420,6 +428,8 @@ type ApplicationPorts struct {
 	accountSettings AccountSettingsPort
 	// accountRuntime 是账号运行时状态用例。
 	accountRuntime AccountRuntimePort
+	// cookieExchange 是构造期注入的专用交换端口。
+	cookieExchange CookieExchangePort
 	// accountSummaries 是账号摘要用例。
 	accountSummaries AccountSummaryPort
 	// accountTasks 是账号自动化任务用例。
@@ -496,6 +506,8 @@ type ApplicationPortsInput struct {
 	Keywords                    KeywordsPort
 	Settings                    SettingsPort
 	Admin                       AdminPort
+	// CookieExchange 是专用授权交换用例。
+	CookieExchange CookieExchangePort
 }
 
 // NewApplicationPorts 将组合根已经验证的用例依赖冻结为 Server 私有快照。
@@ -509,7 +521,7 @@ func NewApplicationPorts(input ApplicationPortsInput) *ApplicationPorts {
 		accountLogin: input.AccountLogin, qrLogin: input.QRLogin, sessionRecovery: input.SessionRecovery,
 		platformCredentials: input.PlatformCredentials, authentication: input.Authentication, loginAudit: input.LoginAudit,
 		passwordLogin: input.PasswordLogin, accountDelete: input.AccountDelete, accountProfile: input.AccountProfile,
-		accountLongLogin: input.AccountLongLogin, accountSettings: input.AccountSettings, accountRuntime: input.AccountRuntime,
+		accountLongLogin: input.AccountLongLogin, accountSettings: input.AccountSettings, accountRuntime: input.AccountRuntime, cookieExchange: input.CookieExchange,
 		accountSummaries: input.AccountSummaries, accountTasks: input.AccountTasks, chat: input.Chat,
 		uncertainNotifications: input.UncertainNotifications, notificationChannels: input.NotificationChannels,
 		analytics: input.Analytics, automationIssues: input.AutomationIssues, automationRules: input.AutomationRules,
@@ -538,7 +550,7 @@ func (ports *ApplicationPorts) validate() error {
 		{"qr_login", ports.qrLogin}, {"session_recovery", ports.sessionRecovery}, {"platform_credentials", ports.platformCredentials},
 		{"authentication", ports.authentication}, {"login_audit", ports.loginAudit}, {"password_login", ports.passwordLogin},
 		{"account_delete", ports.accountDelete}, {"account_profile", ports.accountProfile}, {"account_long_login", ports.accountLongLogin},
-		{"account_settings", ports.accountSettings}, {"account_runtime", ports.accountRuntime}, {"account_summaries", ports.accountSummaries},
+		{"account_settings", ports.accountSettings}, {"account_runtime", ports.accountRuntime}, {"cookie_exchange", ports.cookieExchange}, {"account_summaries", ports.accountSummaries},
 		{"account_tasks", ports.accountTasks}, {"chat", ports.chat}, {"uncertain_notifications", ports.uncertainNotifications},
 		{"notification_channels", ports.notificationChannels}, {"analytics", ports.analytics}, {"automation_issues", ports.automationIssues},
 		{"automation_rules", ports.automationRules}, {"cards", ports.cards}, {"publish_automation_rules", ports.publishAutomationRules},

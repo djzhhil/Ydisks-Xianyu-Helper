@@ -780,25 +780,3 @@ func matchOrderID(s string) string {
 	}
 	return ""
 }
-
-// extractOrderIDFromContent 从交易卡片的订单跳转链接提取真实订单号，兼容确认收货提醒的 intent.page.jumpUrl。
-func extractOrderIDFromContent(contentJSON string) string {
-	// c 保存平台卡片结构；无法解码时不能从普通文案猜测订单号。
-	var c map[string]any
-	if json.Unmarshal([]byte(contentJSON), &c) != nil {
-		return ""
-	}
-	// path 仅覆盖承载订单详情链接的卡片字段，避免把业务键事件码误作订单号。
-	for _, path := range [][]string{
-		{"dxCard", "item", "main", "exContent", "button", "targetUrl"},
-		{"dxCard", "item", "main", "exContent", "button", "intent", "page", "jumpUrl"},
-		{"dxCard", "item", "main", "targetUrl"},
-		{"dynamicOperation", "changeContent", "dxCard", "item", "main", "exContent", "button", "targetUrl"},
-	} {
-		if // id 用于本次流程后续判断的标识
-		id := matchOrderID(nestedString(c, path...)); id != "" {
-			return id
-		}
-	}
-	return ""
-}
